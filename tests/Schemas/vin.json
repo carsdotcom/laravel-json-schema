@@ -1,0 +1,9 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "VIN",
+    "description": "Vehicle Identification Number. Note, this schema does *not* run the checksum, just validates the number is well formed (length and allowed characters). Only validates for vehicles built since 1981 using the 17-character standard.",
+    "type": "string",
+    "pattern": "^[0-9A-HJ-NPRS-Z]{17}$",
+    "minLength" : 17,
+    "maxLength" : 17
+}
