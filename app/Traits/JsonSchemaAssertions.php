@@ -14,6 +14,34 @@ use Carsdotcom\JsonSchemaValidation\SchemaValidator;
 trait JsonSchemaAssertions
 {
     /**
+     * The passed Object validates for the passed Json Schema
+     *
+     * If `$addFormattedErrorToMessage` is set to true, then a detailed description of why
+     * the JSON was invalid will be added to the exception message.
+     *
+     * @param string $schemaUri
+     * @param mixed $object
+     * @param string $message
+     * @param bool $addFormattedErrorToMessage
+     * @return void
+     */
+    public static function assertValidForSchema(
+        string $schemaUri,
+               $object,
+        string $message = '',
+        bool $addFormattedErrorToMessage = true,
+    ): void {
+        $validates = SchemaValidator::validate($object, $schemaUri);
+
+        if ($addFormattedErrorToMessage) {
+            $prepend = "\r\n* ";
+            $message .= "\r\n" . $prepend . implode($prepend, SchemaValidator::getFormattedError());
+        }
+
+        static::assertThat($validates, static::isTrue(), $message);
+    }
+
+    /**
      * The passed Object is NOT valid for the passed Json Schema
      *
      * @param string $schemaUri

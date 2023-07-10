@@ -1,10 +1,10 @@
 <?php
-
 /**
  * Exception thrown by failing JsonSchema validation.
  * Formats errors into the same structure you'd get from
  * Laravel ValidationException->validator->errors()
  */
+declare(strict_types=1);
 
 namespace Carsdotcom\JsonSchemaValidation\Exceptions;
 
@@ -20,25 +20,13 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class JsonSchemaValidationException extends RuntimeException implements HasExtendedExceptionData
 {
-    protected ValidationError $error;
-    protected int $failureHttpStatusCode = Response::HTTP_BAD_REQUEST;
-
-    /**
-     * @param string $message
-     * @param ValidationError $error
-     * @param \Throwable|null $previous
-     * @param int $code
-     */
     public function __construct(
         string $message,
-        ValidationError $error,
+        protected ValidationError $error,
         \Throwable $previous = null,
-        int $code = Response::HTTP_BAD_REQUEST,
+        protected int $failureHttpStatusCode = Response::HTTP_BAD_REQUEST,
     ) {
-        $this->error = $error;
-        $this->failureHttpStatusCode = $code;
-
-        parent::__construct(message: $message, code: $code, previous: $previous);
+        parent::__construct(message: $message, code: $failureHttpStatusCode, previous: $previous);
     }
 
     /**
@@ -47,6 +35,11 @@ class JsonSchemaValidationException extends RuntimeException implements HasExten
     public function errors(): array
     {
         return (new ErrorFormatter())->format($this->error, true, null, [$this, 'formatErrorKey']);
+    }
+
+    public function errorsAsMultilineString(): string
+    {
+        return implode("\n", (new ErrorFormatter())->formatFlat($this->error));
     }
 
     /**
