@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Facade;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
+ * @method static array getFormattedError()
  * @method static array|object getSchemaContents(string $relativeUri, bool $associative = true)
  * @method static void putSchemaContents(string $relativeUri, array|object $schema)
  * @method static string registerRawSchema(bool|object|string $schema)

@@ -1,9 +1,8 @@
 {
     "name": "carsdotcom/laravel-json-schema",
-    "type": "project",
-    "version": "v1.0.0",
-    "description": "Json Schema validation for models, etc.",
-    "keywords": ["library"],
+    "type": "library",
+    "description": "Json Schema validation for Laravel projects",
+    "keywords": ["library", "jsonschema", "laravel", "validation"],
     "license": "MIT",
     "require": {
         "laravel/framework": "^9.19",
