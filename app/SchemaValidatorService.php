@@ -9,6 +9,7 @@
 namespace Carsdotcom\JsonSchemaValidation;
 
 use Carsdotcom\JsonSchemaValidation\Exceptions\JsonSchemaValidationException;
+use DomainException;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -36,6 +37,12 @@ class SchemaValidatorService
     protected function getValidator(): Validator
     {
         if (!$this->validator) {
+            if (empty(config('json-schema.base_url'))) {
+                throw new DomainException(
+                    'Laravel JSON Schema base_url is empty. This can be updated in /config/json-schema.php'
+                );
+            }
+
             $this->validator = new Validator();
             $this->validator->loader()->setBaseUri(Uri::parse(config('json-schema.base_url')));
             $this->validator->resolver()->registerPrefix(

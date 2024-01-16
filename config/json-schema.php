@@ -6,13 +6,13 @@ return [
     | Base URL
     |--------------------------------------------------------------------------
     |
-    | This is the base URL where schemas will be accessible.
+    | This is an absolute base URL where schemas will be accessible.
     |
     | (URL our local schemas must be relative to)
     |
     */
 
-    'base_url' => 'https://schemas.dealerinspire.com/online-shopper/',
+    'base_url' => env('APP_URL', null),
 
     /*
     |--------------------------------------------------------------------------
