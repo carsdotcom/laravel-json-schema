@@ -34,7 +34,7 @@ return [
     |
     */
 
-    'local_base_prefix_tests' => base_path('tests/schemas/'),
+    'local_base_prefix_tests' => base_path('tests/Schemas/'),
 
     /*
     |--------------------------------------------------------------------------
