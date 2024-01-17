@@ -18,7 +18,7 @@ use Tests\Mocks\Models\Vehicle;
  */
 class SchemaValidatorServiceTest extends BaseTestCase
 {
-    public function testValidateUriSchema()
+    public function testValidateUriSchema(): void
     {
         $data = Vehicle::factory()->make();
 
@@ -54,13 +54,13 @@ class SchemaValidatorServiceTest extends BaseTestCase
      * @param $schema
      * @dataProvider normalizeDataProvider
      */
-    public function testNormalizeData($data, $schema)
+    public function testNormalizeData($data, $schema): void
     {
         $validator = new SchemaValidatorService();
         self::assertTrue($validator->validate($data, $schema));
     }
 
-    public function normalizeDataProvider()
+    public function normalizeDataProvider(): array
     {
         return [
             'Collection becomes array' => [collect([1, 2, 3]), '{"type":"array","minItems":3}'],
