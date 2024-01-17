@@ -37,11 +37,19 @@ Copy the `json-schema.php` file from the `vendor/carsdotcom/laravel-json-schema/
 'disks' => [
     'schemas' => [
         'driver' => 'local',
-        'root' => base_path('app/Schemas'), // must match the 'config.json-schema.local_base_prefix' value
+        'root' => app_path('app/Schemas'), // must match the 'config.json-schema.local_base_prefix' value
     ]
 ]
 ```
 3. Add your schema files to the `app/Schemas` folder. You may create subfolders to keep things organized.
+
+#### Generate Enum Schemas
+
+This is an optional step, but can be super helpful.
+
+1. Add `use Carsdotcom\JsonSchemaValidation\Traits\GeneratesSchemaTrait;` to the declarations in the Enum.
+2. Add a `SCHEMA` constant to the enum. It's value will be the relative path to your schema file, such as: `const SCHEMA = '/Acme/Enums/item_type.json';`
+3. Run the `schema:generate` Artisan command.
 
 ## Validating JSON Data Against a Schema
 
