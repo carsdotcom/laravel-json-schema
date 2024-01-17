@@ -58,22 +58,7 @@ trait GeneratesSchemaTrait
 
     }
 
-    protected static function isPhpBuiltInEnum(): bool
-    {
-        return is_a(static::class, UnitEnum::class, true);
-    }
-
-    protected static function getMyCLabsClass(): string
-    {
-        return 'MyCLabs\Enum\Enum';
-    }
-
-    protected static function isMyCLabsEnum(): bool
-    {
-        return is_a(static::class, static::getMyCLabsClass(), true);
-    }
-
-    protected static function generateEnumArray(): array
+    public static function generateEnumArray(): array
     {
         if (static::isMyCLabsEnum()) {
             return static::generateMyCLabsEnumArray();
@@ -93,5 +78,20 @@ trait GeneratesSchemaTrait
         unset($array['SCHEMA']);
 
         return array_values(array_unique($array));
+    }
+
+    protected static function isPhpBuiltInEnum(): bool
+    {
+        return is_a(static::class, UnitEnum::class, true);
+    }
+
+    protected static function getMyCLabsClass(): string
+    {
+        return 'MyCLabs\Enum\Enum';
+    }
+
+    protected static function isMyCLabsEnum(): bool
+    {
+        return is_a(static::class, static::getMyCLabsClass(), true);
     }
 }
