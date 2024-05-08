@@ -22,23 +22,18 @@ trait JsonSchemaAssertions
      * @param string $schemaUri
      * @param mixed $object
      * @param string $message
-     * @param bool $addFormattedErrorToMessage
      * @return void
      */
     public static function assertValidForSchema(
         string $schemaUri,
                $object,
         string $message = '',
-        bool $addFormattedErrorToMessage = true,
     ): void {
-        $validates = SchemaValidator::validate($object, $schemaUri);
-
-        if ($addFormattedErrorToMessage) {
-            $prepend = "\r\n* ";
-            $message .= "\r\n" . $prepend . implode($prepend, SchemaValidator::getFormattedError());
+        try {
+            self::assertTrue(SchemaValidator::validate($object, $schemaUri), $message);
+        } catch (JsonSchemaValidationException $e) {
+            self::assertCanonicallySame([], $e->errors(), $message);
         }
-
-        static::assertThat($validates, static::isTrue(), $message);
     }
 
     /**
@@ -65,6 +60,4 @@ trait JsonSchemaAssertions
             self::assertCanonicallySame([], $e->errors(), 'Validation failed with errors.');
         }
     }
-
-
 }
