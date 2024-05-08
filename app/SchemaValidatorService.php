@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\Uri;
+use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -22,12 +23,6 @@ class SchemaValidatorService
 {
     /** @var Validator */
     protected $validator = null;
-
-    /**
-     * error from the most recent ->validate() call
-     * @var ValidationError
-     */
-    protected $error = null;
 
     /**
      * As needed, build a validator in memory that knows how to load schema from local disk.
@@ -60,11 +55,24 @@ class SchemaValidatorService
      */
     public function validate($data, $schema): bool
     {
+        $result = $this->validationResult($data, $schema);
+        return $result->isValid();
+    }
+
+    /**
+     * Given data (could be a JsonModel, associative-array style JSON, primitive)
+     * and a schema (could be a URI, an object literal, a JSON-encoded string)
+     * return the ValidationResult of the upstream Opis library.
+     * This is a good approach for methods that want to do their own error formatting through a deeper relationship with Opis
+     * @param mixed $data
+     * @param mixed $schema
+     * @return ValidationResult
+     */
+    public function validationResult($data, $schema): ValidationResult
+    {
         $validator = $this->getValidator();
         $data = $this->normalizeData($data);
-        $result = $validator->validate($data, $schema);
-        $this->error = $result->error();
-        return $result->isValid();
+        return $validator->validate($data, $schema);
     }
 
     /**
@@ -78,28 +86,6 @@ class SchemaValidatorService
     private function normalizeData($data)
     {
         return json_decode(json_encode($data, JSON_THROW_ON_ERROR));
-    }
-
-    /**
-     * Return an array of errors from the last *Validation call
-     * @return ValidationError|null
-     */
-    public function getError(): ?ValidationError
-    {
-        return $this->error;
-    }
-
-    /**
-     * Return an array of human readable errors from the last *Validation call
-     * @return array
-     */
-    public function getFormattedError(): array
-    {
-        if (!$this->error) {
-            return [];
-        }
-
-        return (new ErrorFormatter())->formatFlat($this->error);
     }
 
     /**
@@ -122,23 +108,24 @@ class SchemaValidatorService
         bool $appendValidationDescriptions = false,
         int $failureHttpStatusCode = Response::HTTP_BAD_REQUEST,
     ): bool {
-        if ($this->validate($data, $schema) === false) {
+        $results = $this->validationResult($data, $schema);
+        if ($results->isValid() === false) {
             $message = $exceptionMessage ?: 'Request body contains invalid data!';
 
             if ($appendValidationDescriptions) {
                 $prepend = "\r\n* ";
-                $message .= $prepend . implode($prepend, $this->getFormattedError());
+                $message .= $prepend . implode($prepend, (new ErrorFormatter())->formatFlat($results->error()));
             }
 
             Log::debug(
                 "Json Schema Validation Error",
                 [
-                    'error' => (new ErrorFormatter())->format($this->error, true, null, null),
+                    'error' => (new ErrorFormatter())->format($results->error(), true, null, null),
                     'data' => $data
                 ]
             );
 
-            throw new JsonSchemaValidationException($message, $this->getError(), null, $failureHttpStatusCode);
+            throw new JsonSchemaValidationException($message, $results->error(), null, $failureHttpStatusCode);
         }
 
         return true;
