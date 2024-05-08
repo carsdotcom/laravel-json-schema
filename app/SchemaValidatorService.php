@@ -124,6 +124,7 @@ class SchemaValidatorService
     ): bool {
         if ($this->validate($data, $schema) === false) {
             $message = $exceptionMessage ?: 'Request body contains invalid data!';
+            $error = $this->error;
 
             if ($appendValidationDescriptions) {
                 $prepend = "\r\n* ";
@@ -133,12 +134,12 @@ class SchemaValidatorService
             Log::debug(
                 "Json Schema Validation Error",
                 [
-                    'error' => (new ErrorFormatter())->format($this->error, true, null, null),
+                    'error' => (new ErrorFormatter())->format($error, true, null, null),
                     'data' => $data
                 ]
             );
 
-            throw new JsonSchemaValidationException($message, $this->getError(), null, $failureHttpStatusCode);
+            throw new JsonSchemaValidationException($message, $error, null, $failureHttpStatusCode);
         }
 
         return true;
