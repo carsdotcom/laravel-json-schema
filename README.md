@@ -7,14 +7,124 @@ This library builds on the _outstanding_ JsonSchema validator [opis/json-schema]
 
 The entire intent of this library is to make JsonSchema feel like a first class citizen in a Laravel project.
 
-It adds a new config file, `config/json-schema.php` to configure your root directory for self-hosted schema files.
+- Adds a new config file, `config/json-schema.php`, to configure your root directory for self-hosted schema files.
+- Adds the `SchemaValidator` facade that can be used to instantiate the validator with appropriate loaders.
+- Adds new PhpUnit assertions in the `Carsdotcom\JsonSchemaValidation\Traits\JsonSchemaAssertions` trait, such as validating that a mixed item validates for a specific schema.
+- Most interestingly, it lets you use JsonSchema to validate incoming Requests bodies, and/or validate your own outgoing response bodies, all using JsonSchema schemas that you can then export into OpenAPI documentation.
 
-It adds a Facade, `SchemaValidator` that can be used to instantiate the validator with appropriate loaders.
+## Laravel Version Compatibility
 
-It adds new PhpUnit assertions in `JsonSchemaAssertions` like validating that a mixed item validates for a specific schema.
+This package supports Laravel `v9` and `v10`
 
-Most interestingly, it lets you use JsonSchema to validate incoming Requests bodies, and/or validate your own outgoing response bodies, all using JsonSchema schemas that you can then export into OpenAPI documentation.
+## Installation
 
-## Coming Soon
+```
+composer require carsdotcom/laravel-json-schema
+```
 
-More documentation will be coming soon, including some more projects that build on this, including Guzzle outgoing- and incoming-body validation, and a new kind of Laravel Model that persists to JSON instead of to a relational database.
+## Using Laravel JSON Schema
+
+### Setup
+
+#### Config File
+Copy the `json-schema.php` file from the `vendor/carsdotcom/laravel-json-schema/config` folder to your application's `config` folder.
+
+#### Schema Storage
+1. Create a `Schemas` folder under your application root folder, such as `app/Schemas`.
+2. Create a new storage disk under the `disks` key within your application's `config/filesystem.php` file:
+
+```
+'disks' => [
+    'schemas' => [
+        'driver' => 'local',
+        'root' => app_path('app/Schemas'), // must match the 'config.json-schema.local_base_prefix' value
+    ]
+]
+```
+3. Add your schema files to the `app/Schemas` folder. You may create subfolders to keep things organized.
+
+#### Generate Enum Schemas
+
+_This is an optional step, but can be super helpful._
+
+Note: Enums must be created either as a built-in PHP `enum` object or a `MyCLabs\Enum\Enum` class.
+
+1. Add `use Carsdotcom\JsonSchemaValidation\Traits\GeneratesSchemaTrait;` to the declarations in the Enum.
+2. Add a `SCHEMA` constant to the enum. It's value will be the relative path to your schema file, such as: `const SCHEMA = '/Acme/Enums/item_type.json';`
+3. Run the `schema:generate` Artisan command.
+
+## Validating JSON Data Against a Schema
+
+For this example, we'll be using these objects:
+
+### Hosted JSON Schema File
+
+This is assumed to be stored in your `app/Schemas` folder as `Product.json`.
+
+```
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/product.schema.json",
+  "title": "Product",
+  "description": "A product from Acme's catalog",
+  "type": "object",
+  "properties": {
+    "productId": {
+      "description": "The unique identifier for a product",
+      "type": "integer"
+    },
+    "productName": {
+      "description": "Name of the product",
+      "type": "string"
+    },
+    "price": {
+      "description": "The price of the product",
+      "type": "number",
+      "exclusiveMinimum": 0
+    }
+  },
+  "required": [ "productId", "productName", "price" ]
+}
+```
+
+### JSON Data to be Validated
+
+```
+{
+  "productId": 1,
+  "productName": "An ice sculpture",
+  "price": 12.50
+}
+```
+
+### Application Code for Validation
+
+```
+use Carsdotcom\JsonSchemaValidation\SchemaValidator;
+
+SchemaValidator::validateOrThrow($json, 'Product.json');
+```
+
+## Additional Functionality
+
+### Getting the Content of a Schema File
+
+```
+use Carsdotcom\JsonSchemaValidation\SchemaValidator;
+
+SchemaValidator::getSchemaContents('Product.json');
+```
+
+### Storing a Schema File at a Specific Location
+
+```
+use Carsdotcom\JsonSchemaValidation\SchemaValidator;
+
+SchemaValidator::getSchemaContents('Customer.json', $jsonSchemaForCustomer);
+```
+
+### Adding an In-Memory Schema File
+
+```
+$schemaKey = (new SchemaValidatorService)->registerRawSchema($jsonSchema);
+```

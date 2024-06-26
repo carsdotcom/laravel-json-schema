@@ -15,7 +15,7 @@ class BaseTestCase extends TestCase
     protected function defineEnvironment($app)
     {
         // Setup default database to use sqlite :memory:
-        $app['config']->set('json-schema.base_url', 'https://schemas.dealerinspire.com/online-shopper/');
+        $app['config']->set('json-schema.base_url', 'http://localhost/');
         $app['config']->set('json-schema.local_base_prefix', dirname(__FILE__) . '/../tests/Schemas');
         $app['config']->set('json-schema.local_base_prefix_tests', dirname(__FILE__) . '/../tests/Schemas');
         $app['config']->set('database.connections.testbench', [

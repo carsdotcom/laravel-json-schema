@@ -17,25 +17,6 @@ use Tests\BaseTestCase;
  */
 class ValidatesWithJsonSchemaTest extends BaseTestCase
 {
-    /**
-     * Define environment setup.
-     *
-     * @param  \Illuminate\Foundation\Application  $app
-     * @return void
-     */
-    protected function defineEnvironment($app)
-    {
-        // Setup default database to use sqlite :memory:
-        $app['config']->set('json-schema.base_url', 'https://schemas.dealerinspire.com/online-shopper/');
-        $app['config']->set('json-schema.local_base_prefix', dirname(__FILE__) . '/../../../tests/Schemas');
-        $app['config']->set('json-schema.local_base_prefix_tests', dirname(__FILE__) . '/../../../tests/Schemas');
-        $app['config']->set('database.connections.testbench', [
-            'driver'   => 'sqlite',
-            'database' => ':memory:',
-            'prefix'   => '',
-        ]);
-    }
-
     public function testValidateSucceedsImmediatelyIfSchemaUndefined(): void
     {
         $traitUser = new class {
