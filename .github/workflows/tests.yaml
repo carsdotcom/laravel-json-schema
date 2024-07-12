@@ -50,7 +50,7 @@ jobs:
           composer show -D
 
       - name: Execute tests
-        run: composer run test
+        run: vendor/bin/phpunit
         env:
           RAY_ENABLED: false
 
