@@ -18,7 +18,7 @@
         "brianium/paratest": "^6.6",
         "fakerphp/faker": "^1.9.1",
         "mockery/mockery": "^1.4.4",
-        "nunomaduro/collision": "^6.1",
+        "nunomaduro/collision": "^6.1|7.*|8.*",
         "orchestra/testbench": "7.*|8.*|9.*",
         "phpstan/phpstan": "^1.8",
         "phpunit/phpunit": "~8.0|~9.0|^10.5",
