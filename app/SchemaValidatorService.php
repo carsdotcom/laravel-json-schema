@@ -139,6 +139,24 @@ class SchemaValidatorService
     }
 
     /**
+     * This method will attempt to validate the provided JSON-encoded string against the provided schema.
+     */
+    public function validateEncodedStringOrThrow(
+        string $data,
+        $schema,
+        string $exceptionMessage = null,
+        bool $appendValidationDescriptions = false,
+        int $failureHttpStatusCode = Response::HTTP_BAD_REQUEST,
+    ): bool
+    {
+        // Using the non-associative decode is both how Opis documents it
+        // https://opis.io/json-schema/2.x/quick-start.html
+        // and is known to avoid `{}` vs `[]` confusion
+        $decodedData = json_decode($data, associative: false, flags: JSON_THROW_ON_ERROR);
+        return $this->validateOrThrow($decodedData, $schema, $exceptionMessage, $appendValidationDescriptions, $failureHttpStatusCode);
+    }
+
+    /**
      * Given anything that Opis can use as a schema (object, boolean, json-encoded string)
      * register the schema into our namespace, so it can safely contain relative links of its own.
      * The returned string can be used as the second arg to ->validate.
