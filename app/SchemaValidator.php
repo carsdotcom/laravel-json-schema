@@ -16,8 +16,9 @@ use Symfony\Component\HttpFoundation\Response;
  * @method static array|object getSchemaContents(string $relativeUri, bool $associative = true)
  * @method static void putSchemaContents(string $relativeUri, array|object $schema)
  * @method static string registerRawSchema(bool|object|string $schema)
- * @method static bool validate(array|object $data, string $schema)
- * @method static bool validateOrThrow(string|array|object $data, string $schema, string $exceptionMessage = null, bool $appendValidationDescriptions = false, int $failureHttpStatusCode = Response::HTTP_BAD_REQUEST)
+ * @method static bool validate(mixed $data, string $schema)
+ * @method static bool validateOrThrow(mixed $data, string $schema, string $exceptionMessage = null, bool $appendValidationDescriptions = false, int $failureHttpStatusCode = Response::HTTP_BAD_REQUEST)
+ * @method static bool validateEncodedStringOrThrow(mixed $data, string $schema, string $exceptionMessage = null, bool $appendValidationDescriptions = false, int $failureHttpStatusCode = Response::HTTP_BAD_REQUEST)
  */
 class SchemaValidator extends Facade
 {

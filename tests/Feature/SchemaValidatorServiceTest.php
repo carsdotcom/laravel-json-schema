@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use Carsdotcom\JsonSchemaValidation\Exceptions\JsonSchemaValidationException;
 use Carsdotcom\JsonSchemaValidation\SchemaValidatorService;
 use Illuminate\Support\Facades\Config;
 use Opis\JsonSchema\Exceptions\UnresolvedReferenceException;
@@ -87,4 +88,38 @@ class SchemaValidatorServiceTest extends BaseTestCase
         self::assertStringStartsWith(Config::get('json-schema.base_url'), $absoluteRaw);
         self::assertTrue($validator->validate($vins, $absoluteRaw));
     }
+
+    /**
+     * @dataProvider provideValidateEncodedStringOrThrow
+     */
+    public function testValidateEncodedStringOrThrow(string $encodedData, mixed $schema, bool $expectedSuccess): void
+    {
+        $validator = new SchemaValidatorService();
+
+        try {
+            self::assertTrue($validator->validateEncodedStringOrThrow($encodedData, $schema));
+            if (!$expectedSuccess) {
+                self::fail("Should have thrown JsonSchemaValidationException");
+            }
+        } catch (JsonSchemaValidationException $e) {
+            if ($expectedSuccess) {
+                self::assertTrue(false, "Expected success, instead got " . $e->errorsAsMultilineString());
+            } else {
+                self::addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function provideValidateEncodedStringOrThrow(): array
+    {
+        return [
+            'primitive, string schema' => ['420', '{"type": "number", "minimum": 69}', true],
+            'primitive, string schema fails' => ['42', '{"type": "number", "minimum": 69}', false],
+            'empty object is still an object' => ['{}', '{"type": "object"}', true],
+            'empty object is not an array' => ['{}', '{"type": "array"}', false],
+            'typical complex object, success' => ['{"a":1}', '{"type":"object","properties":{"a":{"type":"number"}}, "required":["a"]}', true],
+            'typical complex object, failure' => ['{"b":1}', '{"type":"object","properties":{"a":{"type":"number"}}, "required":["a"]}', false],
+        ];
+    }
+
 }
