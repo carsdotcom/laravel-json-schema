@@ -46,7 +46,7 @@ class JsonSchemaValidationExceptionTest extends BaseTestCase
         }
     }
 
-    public function provideErrorsFormattedLikeMessageBag(): array
+    public static function provideErrorsFormattedLikeMessageBag(): array
     {
         return [
             'simple' => [
