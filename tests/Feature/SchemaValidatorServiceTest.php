@@ -61,7 +61,7 @@ class SchemaValidatorServiceTest extends BaseTestCase
         self::assertTrue($validator->validate($data, $schema));
     }
 
-    public function normalizeDataProvider(): array
+    public static function normalizeDataProvider(): array
     {
         return [
             'Collection becomes array' => [collect([1, 2, 3]), '{"type":"array","minItems":3}'],
@@ -110,7 +110,7 @@ class SchemaValidatorServiceTest extends BaseTestCase
         }
     }
 
-    public function provideValidateEncodedStringOrThrow(): array
+    public static function provideValidateEncodedStringOrThrow(): array
     {
         return [
             'primitive, string schema' => ['420', '{"type": "number", "minimum": 69}', true],
