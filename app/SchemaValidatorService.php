@@ -111,7 +111,7 @@ class SchemaValidatorService
     public function validateOrThrow(
         $data,
         $schema,
-        string $exceptionMessage = null,
+        ?string $exceptionMessage = null,
         bool $appendValidationDescriptions = false,
         int $failureHttpStatusCode = Response::HTTP_BAD_REQUEST,
     ): bool {
@@ -144,7 +144,7 @@ class SchemaValidatorService
     public function validateEncodedStringOrThrow(
         string $data,
         $schema,
-        string $exceptionMessage = null,
+        ?string $exceptionMessage = null,
         bool $appendValidationDescriptions = false,
         int $failureHttpStatusCode = Response::HTTP_BAD_REQUEST,
     ): bool
