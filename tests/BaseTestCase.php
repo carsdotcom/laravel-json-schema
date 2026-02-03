@@ -2,10 +2,13 @@
 
 namespace Tests;
 
+use Carsdotcom\JsonSchemaValidation\Traits\JsonSchemaAssertions;
 use Orchestra\Testbench\TestCase;
 
 class BaseTestCase extends TestCase
 {
+    use JsonSchemaAssertions;
+
     /**
      * Define environment setup.
      *

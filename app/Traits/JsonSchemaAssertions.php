@@ -6,13 +6,37 @@ declare(strict_types=1);
 
 namespace Carsdotcom\JsonSchemaValidation\Traits;
 
-
 use Carsdotcom\JsonSchemaValidation\Contracts\CanValidate;
 use Carsdotcom\JsonSchemaValidation\Exceptions\JsonSchemaValidationException;
+use Carsdotcom\JsonSchemaValidation\Helpers\Json;
 use Carsdotcom\JsonSchemaValidation\SchemaValidator;
+use PHPUnit\Framework\Assert;
 
+/**
+ * @mixin Assert  This trait should be added to PHPUnit test classes, usually BaseTestCase
+ */
 trait JsonSchemaAssertions
 {
+    /**
+     * Given two things that support JSON encoding,
+     * assert that they are identical in their canonicalized (sorted props), stringified form
+     * @param mixed $a literally anything that can be JSON encoded
+     * @param mixed $b literally anything that can be JSON encoded
+     */
+    public static function assertCanonicallySame(mixed $a, mixed $b, string $comment = ''): void
+    {
+        $cannonA = Json::canonicalize(json_encode($a), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        $cannonB = Json::canonicalize(json_encode($b), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        self::assertSame($cannonA, $cannonB, $comment);
+    }
+
+    public function assertCanonicallySameExcept($a, $b, array $ignoredKeys, string $comment = ''): void
+    {
+        $a = collect($a)->except($ignoredKeys)->toArray();
+        $b = collect($b)->except($ignoredKeys)->toArray();
+        self::assertCanonicallySame($a, $b, $comment);
+    }
+
     /**
      * The passed Object validates for the passed Json Schema
      *
