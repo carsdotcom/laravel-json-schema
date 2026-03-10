@@ -14,7 +14,6 @@ use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Opis\JsonSchema\Errors\ErrorFormatter;
-use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\Uri;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;

@@ -13,6 +13,7 @@ use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Errors\ValidationError;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 /**
  * Class JsonSchemaValidationException
@@ -23,7 +24,7 @@ class JsonSchemaValidationException extends RuntimeException implements HasExten
     public function __construct(
         string $message,
         protected ValidationError $error,
-        \Throwable $previous = null,
+        ?Throwable $previous = null,
         protected int $failureHttpStatusCode = Response::HTTP_BAD_REQUEST,
     ) {
         parent::__construct(message: $message, code: $failureHttpStatusCode, previous: $previous);
