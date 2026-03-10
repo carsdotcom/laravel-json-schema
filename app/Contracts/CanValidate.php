@@ -20,5 +20,5 @@ interface CanValidate
      * @throws Exception if the data is invalid. Exact exception is up to the implementation,
      * but should implement HasExtendedExceptionData like JsonSchemaValidationException
      */
-    public function validateOrThrow(string $exceptionMessage = null): bool;
+    public function validateOrThrow(?string $exceptionMessage = null): bool;
 }

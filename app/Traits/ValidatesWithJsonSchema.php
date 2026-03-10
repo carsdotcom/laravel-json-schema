@@ -18,7 +18,7 @@ trait ValidatesWithJsonSchema
      * @throws JsonSchemaValidationException   if data is invalid
      */
     public function validateOrThrow(
-        string $exceptionMessage = null,
+        ?string $exceptionMessage = null,
         int $failureHttpStatusCode = Response::HTTP_BAD_REQUEST,
     ): bool {
         if (!defined(static::class . '::SCHEMA') || !static::SCHEMA) {
