@@ -8,6 +8,7 @@ namespace Tests\Unit\Helpers;
 
 use Carsdotcom\JsonSchemaValidation\Helpers\Json;
 use Illuminate\Support\Collection;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\BaseTestCase;
 use Tests\Mocks\Models\Vehicle;
 
@@ -39,6 +40,7 @@ class JsonTest extends BaseTestCase
      * @throws \Exception
      * @dataProvider provideCanonicallySame
      */
+    #[DataProvider('provideCanonicallySame')]
     public function testCanonicallySame($thing1, $thing2, bool $expected)
     {
         self::assertSame($expected, Json::canonicallySame($thing1, $thing2));
@@ -73,6 +75,7 @@ class JsonTest extends BaseTestCase
     /**
      * @dataProvider provideIsObject
      */
+    #[DataProvider('provideIsObject')]
     public function testIsObject(mixed $subject, bool $expected): void
     {
         self::assertSame($expected, Json::isObject($subject));

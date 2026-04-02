@@ -9,6 +9,7 @@ namespace Tests\Feature;
 
 use Carsdotcom\JsonSchemaValidation\Exceptions\JsonSchemaValidationException;
 use Carsdotcom\JsonSchemaValidation\SchemaValidator;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\BaseTestCase;
 
 class JsonSchemaValidationExceptionTest extends BaseTestCase
@@ -36,6 +37,7 @@ class JsonSchemaValidationExceptionTest extends BaseTestCase
     /**
      * @dataProvider provideErrorsFormattedLikeMessageBag
      */
+    #[DataProvider('provideErrorsFormattedLikeMessageBag')]
     public function testErrorsFormattedLikeMessageBag($data, string $schema, array $expectedErrors): void
     {
         try {
