@@ -10,6 +10,7 @@ use Carsdotcom\JsonSchemaValidation\Exceptions\JsonSchemaValidationException;
 use Carsdotcom\JsonSchemaValidation\SchemaValidatorService;
 use Illuminate\Support\Facades\Config;
 use Opis\JsonSchema\Exceptions\UnresolvedReferenceException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\BaseTestCase;
 use Tests\Mocks\Models\Vehicle;
 
@@ -55,6 +56,7 @@ class SchemaValidatorServiceTest extends BaseTestCase
      * @param $schema
      * @dataProvider normalizeDataProvider
      */
+    #[DataProvider('normalizeDataProvider')]
     public function testNormalizeData($data, $schema): void
     {
         $validator = new SchemaValidatorService();
@@ -92,6 +94,7 @@ class SchemaValidatorServiceTest extends BaseTestCase
     /**
      * @dataProvider provideValidateEncodedStringOrThrow
      */
+    #[DataProvider('provideValidateEncodedStringOrThrow')]
     public function testValidateEncodedStringOrThrow(string $encodedData, mixed $schema, bool $expectedSuccess): void
     {
         $validator = new SchemaValidatorService();
