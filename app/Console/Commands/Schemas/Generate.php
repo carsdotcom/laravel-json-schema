@@ -7,6 +7,7 @@
 namespace Carsdotcom\JsonSchemaValidation\Console\Commands\Schemas;
 
 use Carsdotcom\JsonSchemaValidation\Helpers\FindClasses;
+use Carsdotcom\JsonSchemaValidation\Traits\GeneratesSchemaMyCLabsTrait;
 use Carsdotcom\JsonSchemaValidation\Traits\GeneratesSchemaTrait;
 use Carsdotcom\JsonSchemaValidation\Traits\VerboseLineTrait;
 use Illuminate\Console\Command;
@@ -34,8 +35,10 @@ class Generate extends Command
      */
     public function handle()
     {
+        $schemaTraits = [GeneratesSchemaTrait::class, GeneratesSchemaMyCLabsTrait::class];
+
         FindClasses::inAppPath('Enums')
-            ->filter(fn($class) => in_array(GeneratesSchemaTrait::class, class_uses_recursive($class), true))
+            ->filter(fn($class) => array_intersect($schemaTraits, class_uses_recursive($class)))
             ->each(fn($class) => $class::generateSchema());
     }
 }
