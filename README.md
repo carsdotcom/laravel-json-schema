@@ -14,7 +14,7 @@ The entire intent of this library is to make JsonSchema feel like a first class 
 
 ## Laravel Version Compatibility
 
-This package supports Laravel `v9+`.
+This package supports Laravel `v10+` and PHP `8.1+`.
 
 ## Installation
 
@@ -47,11 +47,17 @@ Copy the `json-schema.php` file from the `vendor/carsdotcom/laravel-json-schema/
 
 _This is an optional step, but can be super helpful._
 
-Note: Enums must be created either as a built-in PHP `enum` object or a `MyCLabs\Enum\Enum` class.
+For **native PHP backed enums** (`BackedEnum`):
 
-1. Add `use Carsdotcom\JsonSchemaValidation\Traits\GeneratesSchemaTrait;` to the declarations in the Enum.
-2. Add a `SCHEMA` constant to the enum. It's value will be the relative path to your schema file, such as: `const SCHEMA = '/Acme/Enums/item_type.json';`
-3. Run the `schema:generate` Artisan command.
+1. Add `use Carsdotcom\JsonSchemaValidation\Traits\GeneratesSchemaTrait;` to the enum.
+2. Add a `SCHEMA` constant whose value is the relative path to your schema file: `const SCHEMA = 'Acme/Enums/item_type.json';`
+3. Run `php artisan schemas:generate`.
+
+For **MyCLabs enums** (`MyCLabs\Enum\Enum` subclasses):
+
+1. Add `use Carsdotcom\JsonSchemaValidation\Traits\GeneratesSchemaMyCLabsTrait;` to the class.
+2. Add a `SCHEMA` constant as above.
+3. Run `php artisan schemas:generate`.
 
 ## Validating JSON Data Against a Schema
 
