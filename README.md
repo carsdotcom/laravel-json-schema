@@ -47,13 +47,13 @@ Copy the `json-schema.php` file from the `vendor/carsdotcom/laravel-json-schema/
 
 _This is an optional step, but can be super helpful._
 
-For **native PHP backed enums** (`BackedEnum`):
+For **native PHP backed enums** (`BackedEnum`) — recommended for all new code:
 
 1. Add `use Carsdotcom\JsonSchemaValidation\Traits\GeneratesSchemaTrait;` to the enum.
 2. Add a `SCHEMA` constant whose value is the relative path to your schema file: `const SCHEMA = 'Acme/Enums/item_type.json';`
 3. Run `php artisan schemas:generate`.
 
-For **MyCLabs enums** (`MyCLabs\Enum\Enum` subclasses):
+For **[MyCLabs enums](https://github.com/myclabs/php-enum)** (`MyCLabs\Enum\Enum` subclasses) — legacy support only, not recommended for new code:
 
 1. Add `use Carsdotcom\JsonSchemaValidation\Traits\GeneratesSchemaMyCLabsTrait;` to the class.
 2. Add a `SCHEMA` constant as above.
