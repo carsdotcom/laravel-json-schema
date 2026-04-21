@@ -10,6 +10,8 @@ class SchemaValidatorProvider extends ServiceProvider implements DeferrableProvi
 {
     public function register()
     {
+        $this->mergeConfigFrom(__DIR__ . '/../config/json-schema.php', 'json-schema');
+
         $this->app->singleton(SchemaValidatorService::class, function () {
             return new SchemaValidatorService();
         });
