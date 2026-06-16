@@ -14,6 +14,7 @@ use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Opis\JsonSchema\Errors\ErrorFormatter;
+use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Uri;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
@@ -57,11 +58,12 @@ class SchemaValidatorService
      * return whether the data validates against the schema, and hang on to any errors
      * @param mixed $data
      * @param mixed $schema
+     * @param bool $normalizeWithJsonSerializable See {@see normalizeData()} for when to pass false.
      * @return bool
      */
-    public function validate($data, $schema): bool
+    public function validate($data, $schema, bool $normalizeWithJsonSerializable = true): bool
     {
-        $result = $this->validationResult($data, $schema);
+        $result = $this->validationResult($data, $schema, $normalizeWithJsonSerializable);
         return $result->isValid();
     }
 
@@ -72,25 +74,43 @@ class SchemaValidatorService
      * This is a good approach for methods that want to do their own error formatting through a deeper relationship with Opis
      * @param mixed $data
      * @param mixed $schema
+     * @param bool $normalizeWithJsonSerializable See {@see normalizeData()} for when to pass false.
      * @return ValidationResult
      */
-    public function validationResult($data, $schema): ValidationResult
+    public function validationResult($data, $schema, bool $normalizeWithJsonSerializable = true): ValidationResult
     {
         $validator = $this->getValidator();
-        $data = $this->normalizeData($data);
+        $data = $this->normalizeData($data, $normalizeWithJsonSerializable);
         return $validator->validate($data, $schema);
     }
 
     /**
-     * opis/json-schema doesn't accept associative-array style JSON, only object-style.
-     * Since Laravel and a lot of our code uses associative-arrays, this converts it.
-     * This also uses the object's JsonSerializable contract to get the exportable version,
-     * and even converts Collections to flat arrays
+     * opis/json-schema doesn't accept associative-array style JSON, only object-style,
+     * so associative arrays must be converted to stdClass before validation.
+     *
+     * Default ($normalizeWithJsonSerializable = true): round-trip through json_encode/json_decode.
+     * This honors the JsonSerializable contract — JsonModels, Collections, DateTime, etc. are
+     * converted via their serialized form — so it is safe for any input.
+     *
+     * Opt-out ($normalizeWithJsonSerializable = false): convert with Opis' own Helper::toJSON().
+     * It still produces a full object-style copy of the data, but builds it directly instead of
+     * round-tripping through a JSON string, so peak memory holds one structured copy rather than
+     * a structured copy PLUS the full encoded string — a meaningful saving on very large payloads.
+     * Only safe when $data contains no JsonSerializable/Collections/DateTime, because Helper::toJSON()
+     * reads public object properties and does NOT invoke jsonSerialize().
+     *
      * @param mixed $data
+     * @param bool $normalizeWithJsonSerializable
      * @return mixed
      */
-    private function normalizeData($data)
+    private function normalizeData($data, bool $normalizeWithJsonSerializable = true)
     {
+        if (!$normalizeWithJsonSerializable) {
+            // Despite the name, Helper::toJSON returns a PHP stdClass/array tree (not a JSON string):
+            // the object-style structure Opis requires, built without an intermediate encoded string.
+            return Helper::toJSON($data);
+        }
+
         return json_decode(json_encode($data, JSON_THROW_ON_ERROR));
     }
 
@@ -105,6 +125,7 @@ class SchemaValidatorService
      * @param string|null $exceptionMessage
      * @param bool $appendValidationDescriptions
      * @param int $failureHttpStatusCode override what http status code to use on validation failure: default is 400
+     * @param bool $normalizeWithJsonSerializable See {@see normalizeData()} for when to pass false.
      * @return bool
      */
     public function validateOrThrow(
@@ -113,8 +134,9 @@ class SchemaValidatorService
         ?string $exceptionMessage = null,
         bool $appendValidationDescriptions = false,
         int $failureHttpStatusCode = Response::HTTP_BAD_REQUEST,
+        bool $normalizeWithJsonSerializable = true,
     ): bool {
-        $results = $this->validationResult($data, $schema);
+        $results = $this->validationResult($data, $schema, $normalizeWithJsonSerializable);
         if ($results->isValid() === false) {
             $message = $exceptionMessage ?: 'Request body contains invalid data!';
 
