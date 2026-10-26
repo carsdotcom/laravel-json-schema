@@ -129,7 +129,8 @@ class CreateProductRequest extends FormRequest
 }
 ```
 
-- A body that is not JSON throws a 400 `HttpException`.
+- A body that is not JSON, or cannot be parsed as JSON (including an empty body), throws a 400 `HttpException`.
+- The schema check reads the raw body string, so `{}` is an object and `[]` is an array.
 - A body that violates the schema throws `JsonSchemaValidationException`, the same as `SchemaValidator::validateOrThrow()`.
 - A request class without a `SCHEMA` constant throws a `DomainException`.
 - Do not define `rules()`. The trait does not use Laravel rules.

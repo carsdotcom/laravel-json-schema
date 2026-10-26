@@ -26,6 +26,7 @@ use Carsdotcom\JsonSchemaValidation\Exceptions\JsonSchemaValidationException;
 use Carsdotcom\JsonSchemaValidation\SchemaValidator;
 use Carsdotcom\JsonSchemaValidation\Validation\SchemaCheckedBodyValidator;
 use DomainException;
+use JsonException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -39,7 +40,7 @@ trait ValidatesRequestBodyWithJsonSchema
      * Laravel calls this after authorize() and the (empty) rules pass.
      * @return void
      * @throws DomainException                  on misconfiguration
-     * @throws HttpException                    if the body is not recognizably JSON
+     * @throws HttpException                    if the body is not JSON, or cannot be parsed as JSON
      * @throws JsonSchemaValidationException    if the body violates the schema
      */
     protected function passedValidation(): void
@@ -63,6 +64,8 @@ trait ValidatesRequestBodyWithJsonSchema
         } catch (JsonSchemaValidationException $exception) {
             $this->logRejectedBody($exception);
             throw $exception;
+        } catch (JsonException $exception) {
+            throw new HttpException(Response::HTTP_BAD_REQUEST, 'Request body is not valid JSON', $exception);
         }
 
         // Hand the checked body to the validator where FormRequest::validated() and safe() look for it.

@@ -181,6 +181,90 @@ class ValidatesRequestBodyWithJsonSchemaTest extends BaseTestCase
         $request->validateResolved();
     }
 
+    /**
+     * The schema check must see the raw string, so an empty object stays an object ({} vs [] is not ambiguous)
+     */
+    public function testEmptyObjectBodySatisfiesTypeObject(): void
+    {
+        $request = new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+            public const SCHEMA = '{"type":"object"}';
+        };
+        $request = $this->resolve($request, '{}');
+        $request->validateResolved();
+        self::assertSame([], $request->validated());
+    }
+
+    public function testEmptyArrayBodyDoesNotSatisfyTypeObject(): void
+    {
+        $request = new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+            public const SCHEMA = '{"type":"object"}';
+        };
+        $request = $this->resolve($request, '[]');
+        try {
+            $request->validateResolved();
+            self::fail('Expected a JsonSchemaValidationException');
+        } catch (JsonSchemaValidationException $exception) {
+            self::assertSame(
+                ['root element' => ['The data (array) must match the type: object']],
+                $exception->errors(),
+            );
+        }
+    }
+
+    public function testScalarBodyReportsRootElementError(): void
+    {
+        $request = new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+            public const SCHEMA = '{"type":"object"}';
+        };
+        $request = $this->resolve($request, '"Stringy string string"');
+        try {
+            $request->validateResolved();
+            self::fail('Expected a JsonSchemaValidationException');
+        } catch (JsonSchemaValidationException $exception) {
+            self::assertSame(
+                ['root element' => ['The data (string) must match the type: object']],
+                $exception->errors(),
+            );
+            self::assertSame(400, $exception->getStatusCode());
+        }
+    }
+
+    public function testUnparseableJsonBodyThrows400(): void
+    {
+        $request = $this->resolve($this->widgetRequest(), '{"name":');
+        try {
+            $request->validateResolved();
+            self::fail('Expected a 400 HttpException');
+        } catch (HttpException $exception) {
+            self::assertSame(400, $exception->getStatusCode());
+        }
+    }
+
+    public function testEmptyBodyWithJsonContentTypeThrows400(): void
+    {
+        $request = $this->resolve($this->widgetRequest(), '');
+        try {
+            $request->validateResolved();
+            self::fail('Expected a 400 HttpException');
+        } catch (HttpException $exception) {
+            self::assertSame(400, $exception->getStatusCode());
+        }
+    }
+
+    public function testEmptyObjectBodyDoesNotSatisfyTypeArray(): void
+    {
+        $request = new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+            public const SCHEMA = '{"type":"array"}';
+        };
+        $request = $this->resolve($request, '{}');
+        $this->expectException(JsonSchemaValidationException::class);
+        $request->validateResolved();
+    }
+
     public function testLogRejectedBodyIsCalledOnSchemaFailure(): void
     {
         $request = new class extends FormRequest {
