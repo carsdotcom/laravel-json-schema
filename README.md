@@ -111,6 +111,64 @@ use Carsdotcom\JsonSchemaValidation\SchemaValidator;
 SchemaValidator::validateOrThrow($json, 'Product.json');
 ```
 
+## Validating a Request Body in a FormRequest
+
+Use `ValidatesRequestBodyWithJsonSchema` on a `FormRequest` to validate the JSON request body against a schema.
+The trait keeps Laravel's normal validation pipeline, so `prepareForValidation()` and `authorize()` run as usual.
+An unauthorized caller gets a 403 before the body is read.
+
+```php
+use Carsdotcom\JsonSchemaValidation\Traits\ValidatesRequestBodyWithJsonSchema;
+use Illuminate\Foundation\Http\FormRequest;
+
+class CreateProductRequest extends FormRequest
+{
+    use ValidatesRequestBodyWithJsonSchema;
+
+    public const SCHEMA = 'Product.json';
+}
+```
+
+- A body that is not JSON throws a 400 `HttpException`.
+- A body that violates the schema throws `JsonSchemaValidationException`, the same as `SchemaValidator::validateOrThrow()`.
+- A request class without a `SCHEMA` constant throws a `DomainException`.
+- Do not define `rules()`. The trait does not use Laravel rules.
+
+### What `validated()` and `safe()` return
+
+They return the schema-checked JSON body only. Route parameters and query parameters are never included.
+Read them with `$request->route('id')` and `$request->query('page')`.
+The schema decides which body keys remain. If the schema allows additional properties, `validated()` returns the whole body.
+
+### Logging a rejected body
+
+The trait does not log by default, because a body can hold personal data.
+To log, override `logRejectedBody()`. It runs only when the body violates the schema.
+
+```php
+protected function logRejectedBody(JsonSchemaValidationException $exception): void
+{
+    Log::error('Invalid request body', [
+        'url' => $this->url(),
+        'body' => $this->getContent(),
+        'errors' => $exception->errors(),
+    ]);
+}
+```
+
+### Adding your own checks
+
+Do not override `passedValidation()`. A method on your class replaces the trait's method, and the schema check is skipped.
+Decorate `validateResolved()` instead.
+
+```php
+public function validateResolved(): void
+{
+    parent::validateResolved();
+    $this->validateRouteParameters();
+}
+```
+
 ## Additional Functionality
 
 ### Getting the Content of a Schema File
