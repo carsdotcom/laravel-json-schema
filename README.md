@@ -114,8 +114,8 @@ SchemaValidator::validateOrThrow($json, 'Product.json');
 ## Validating a Request Body in a FormRequest
 
 Use `ValidatesRequestBodyWithJsonSchema` on a `FormRequest` to validate the JSON request body against a schema.
-The trait keeps Laravel's normal validation pipeline, so `prepareForValidation()` and `authorize()` run as usual.
-An unauthorized caller gets a 403 before the body is read.
+The trait keeps Laravel's normal validation pipeline and does not touch authorization.
+`prepareForValidation()` and `authorize()` run as usual, and the schema check runs last.
 
 ```php
 use Carsdotcom\JsonSchemaValidation\Traits\ValidatesRequestBodyWithJsonSchema;

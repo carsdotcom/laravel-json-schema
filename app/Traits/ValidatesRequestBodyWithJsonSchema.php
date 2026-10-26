@@ -4,10 +4,11 @@
  *
  * This trait looks for a constant SCHEMA on the request class that uses it, usually a JsonSchema URI.
  *
- * It does not replace validateResolved(), so Laravel's pipeline (prepareForValidation, authorize, failedAuthorization)
- * runs as normal and an unauthorized caller is rejected before the body is read. The schema check runs in
- * passedValidation(). Do not override passedValidation() in a class that uses this trait: the class method wins,
- * and the schema check is silently skipped. To run extra checks, decorate validateResolved() instead:
+ * It does not replace validateResolved() and does not touch authorization: Laravel's pipeline
+ * (prepareForValidation, authorize, failedAuthorization) runs as normal. The schema check runs in
+ * passedValidation(), which Laravel calls last. Do not override passedValidation() in a class that uses this
+ * trait: the class method wins, and the schema check is silently skipped.
+ * To run extra checks, decorate validateResolved() instead:
  *
  *      public function validateResolved(): void
  *      {
@@ -33,6 +34,10 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 /**
  * Trait ValidatesRequestBodyWithJsonSchema
  * @package Carsdotcom\JsonSchemaValidation\Traits
+ *
+ * Designed for classes that extend Illuminate\Foundation\Http\FormRequest. PHP cannot enforce this on a trait,
+ * but static analyzers and IDEs read the tags below. It uses isJson(), getContent(), setValidator() and $container.
+ * @phpstan-require-extends \Illuminate\Foundation\Http\FormRequest
  */
 trait ValidatesRequestBodyWithJsonSchema
 {

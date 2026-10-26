@@ -19,7 +19,7 @@ class SchemaCheckedBodyValidator extends Validator
 {
     /**
      * @param Translator $translator
-     * @param array $body   Decoded JSON body, already checked against its schema
+     * @param array<array-key, mixed> $body   Decoded JSON body, already checked against its schema
      */
     public function __construct(
         Translator $translator,
@@ -29,7 +29,7 @@ class SchemaCheckedBodyValidator extends Validator
     }
 
     /**
-     * @return array the schema-checked body
+     * @return array<array-key, mixed> the schema-checked body
      */
     public function validated(): array
     {

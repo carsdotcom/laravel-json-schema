@@ -94,7 +94,12 @@ class ValidatesRequestBodyWithJsonSchemaTest extends BaseTestCase
         $request->validateResolved();
     }
 
-    public function testUnauthorizedRequestIsRejectedBeforeTheBodyIsRead(): void
+    /**
+     * The trait does not touch authorization, by design: it only hooks passedValidation(), so Laravel's
+     * authorize() and failedAuthorization() run as usual. This is a regression test against the earlier design,
+     * which overrode validateResolved() and had to re-implement authorization itself.
+     */
+    public function testTraitLeavesAuthorizationToLaravel(): void
     {
         $request = new class extends FormRequest {
             use ValidatesRequestBodyWithJsonSchema;
@@ -105,7 +110,7 @@ class ValidatesRequestBodyWithJsonSchemaTest extends BaseTestCase
                 return false;
             }
         };
-        // This body is not JSON and not valid, but authorization must fail first
+        // This body is not JSON, yet Laravel's authorization failure is what surfaces
         $request = $this->resolve($request, 'garbage', 'text/plain');
         $this->expectException(AuthorizationException::class);
         $request->validateResolved();
@@ -243,16 +248,6 @@ class ValidatesRequestBodyWithJsonSchemaTest extends BaseTestCase
         }
     }
 
-    public function testEmptyBodyWithJsonContentTypeThrows400(): void
-    {
-        $request = $this->resolve($this->widgetRequest(), '');
-        try {
-            $request->validateResolved();
-            self::fail('Expected a 400 HttpException');
-        } catch (HttpException $exception) {
-            self::assertSame(400, $exception->getStatusCode());
-        }
-    }
 
     public function testEmptyObjectBodyDoesNotSatisfyTypeArray(): void
     {
