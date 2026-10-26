@@ -12,6 +12,7 @@ use Carsdotcom\JsonSchemaValidation\Traits\ValidatesRequestBodyWithJsonSchema;
 use DomainException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Routing\Route;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\BaseTestCase;
 
@@ -160,12 +161,26 @@ class ValidatesRequestBodyWithJsonSchemaTest extends BaseTestCase
         self::assertNull($request->validated('count'));
     }
 
-    public function testValidatedReturnsOnlyTheBodyNotQueryOrRouteData(): void
+    /**
+     * Route and query data are not schema-checked, so they must not be readable through validated() or safe()
+     */
+    public function testRouteAndQueryDataAreNotAccessibleThroughValidatedOrSafe(): void
     {
-        $request = $this->resolve($this->widgetRequest(), '{"name":"sprocket"}', uri: '/widgets?env=prod');
+        $request = $this->resolve($this->widgetRequest(), '{"name":"sprocket"}', uri: '/widgets/42?page=2');
+        $route = new Route('POST', '/widgets/{id}', []);
+        $route->bind($request);
+        $request->setRouteResolver(fn() => $route);
         $request->validateResolved();
-        self::assertSame(['name' => 'sprocket'], $request->validated());
-        self::assertNull($request->validated('env'));
+
+        // They stay reachable the normal way
+        self::assertSame('42', $request->route('id'));
+        self::assertSame('2', $request->query('page'));
+
+        self::assertNull($request->validated('id'));
+        self::assertNull($request->validated('page'));
+        self::assertSame('fallback', $request->validated('page', 'fallback'));
+        self::assertNull($request->safe()->input('id'));
+        self::assertSame(['name' => 'sprocket'], $request->safe()->all());
     }
 
     public function testSafeReturnsTheBody(): void
