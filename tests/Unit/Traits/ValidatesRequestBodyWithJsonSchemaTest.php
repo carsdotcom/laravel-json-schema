@@ -83,6 +83,24 @@ class ValidatesRequestBodyWithJsonSchemaTest extends BaseTestCase
         }
     }
 
+    /**
+     * Apps commonly declare the constant protected, and only make it public when an OpenAPI annotation needs it
+     */
+    public function testProtectedSchemaConstantIsFound(): void
+    {
+        $request = new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+            protected const SCHEMA = 'widget.json';
+        };
+        $valid = $this->resolve($request, '{"name":"sprocket"}');
+        $valid->validateResolved();
+        self::assertSame(['name' => 'sprocket'], $valid->validated());
+
+        $invalid = $this->resolve($request, '{"count":3}');
+        $this->expectException(JsonSchemaValidationException::class);
+        $invalid->validateResolved();
+    }
+
     public function testMissingSchemaConstantIsAMisconfiguration(): void
     {
         $request = new class extends FormRequest {
