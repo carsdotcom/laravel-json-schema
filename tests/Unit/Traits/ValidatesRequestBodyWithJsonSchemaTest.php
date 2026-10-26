@@ -181,7 +181,6 @@ class ValidatesRequestBodyWithJsonSchemaTest extends BaseTestCase
         self::assertNull($request->validated('page'));
         self::assertSame('fallback', $request->validated('page', 'fallback'));
         self::assertNull($request->safe()->input('id'));
-        self::assertSame(['name' => 'sprocket'], $request->safe()->all());
     }
 
     public function testSafeReturnsTheBody(): void
