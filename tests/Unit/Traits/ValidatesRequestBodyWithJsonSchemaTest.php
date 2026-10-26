@@ -176,6 +176,7 @@ class ValidatesRequestBodyWithJsonSchemaTest extends BaseTestCase
         self::assertSame('42', $request->route('id'));
         self::assertSame('2', $request->query('page'));
 
+        self::assertSame(['name' => 'sprocket'], $request->validated());
         self::assertNull($request->validated('id'));
         self::assertNull($request->validated('page'));
         self::assertSame('fallback', $request->validated('page', 'fallback'));
