@@ -116,6 +116,8 @@ SchemaValidator::validateOrThrow($json, 'Product.json');
 Use `ValidatesRequestBodyWithJsonSchema` on a `FormRequest` to validate the JSON request body against a schema.
 The trait keeps Laravel's normal validation pipeline and does not touch authorization.
 `prepareForValidation()` and `authorize()` run as usual, and the schema check runs last.
+The schema check reads the raw body, so changes that `prepareForValidation()` makes to the input are not checked
+and do not appear in `validated()`. See [What `validated()` and `safe()` return](#what-validated-and-safe-return).
 
 ```php
 use Carsdotcom\JsonSchemaValidation\Traits\ValidatesRequestBodyWithJsonSchema;
@@ -140,6 +142,14 @@ class CreateProductRequest extends FormRequest
 They return the schema-checked JSON body only. Route parameters and query parameters are never included.
 Read them with `$request->route('id')` and `$request->query('page')`.
 The schema decides which body keys remain. If the schema allows additional properties, `validated()` returns the whole body.
+
+`validated()` and `safe()` return an array. A body that is a scalar (for example `5`) can pass a schema that allows it,
+and then `validated()` returns `[]`.
+
+The check reads the raw body string, not the request input. This keeps `{}` and `[]` apart, because PHP cannot tell them apart after decoding.
+A `merge()` or `replace()` in `prepareForValidation()` changes `$request->input()`, but not the checked body.
+The merged values are not validated, and `validated()` does not return them.
+Do not use `prepareForValidation()` to change the body. Apply defaults in the controller or the schema.
 
 ### Logging a rejected body
 

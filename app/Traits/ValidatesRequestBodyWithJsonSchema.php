@@ -18,6 +18,8 @@
  *
  * validated() and safe() return the schema-checked body only. Route and query data are never included.
  * The schema decides which body keys survive: with additionalProperties allowed, validated() returns the whole body.
+ * The check reads the raw body string, so {} and [] stay different. Changes that prepareForValidation() makes to the
+ * input (for example merge()) are neither checked nor returned by validated().
  */
 declare(strict_types=1);
 
