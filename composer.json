@@ -16,7 +16,6 @@
     },
     "require-dev": {
         "myclabs/php-enum": "^1.8",
-        "mockery/mockery": "^1.6.10",
         "orchestra/testbench": "10.*|11.*",
         "phpunit/phpunit": "^11.5.3|^12.0"
     },
