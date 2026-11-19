@@ -14,7 +14,7 @@ The entire intent of this library is to make JsonSchema feel like a first class 
 
 ## Laravel Version Compatibility
 
-This package supports Laravel `v10+` and PHP `8.1+`.
+This package supports Laravel `v12+` and PHP `8.2+`.
 
 ## Installation
 
