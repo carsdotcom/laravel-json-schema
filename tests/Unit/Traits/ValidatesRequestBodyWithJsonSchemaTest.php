@@ -1,0 +1,316 @@
+<?php
+/**
+ * Test the ValidatesRequestBodyWithJsonSchema trait, which validates a FormRequest's JSON body against a JsonSchema
+ * from Laravel's passedValidation() hook, so the rest of the FormRequest pipeline keeps working.
+ */
+declare(strict_types=1);
+
+namespace Tests\Unit\Traits;
+
+use Carsdotcom\JsonSchemaValidation\Exceptions\JsonSchemaValidationException;
+use Carsdotcom\JsonSchemaValidation\Traits\ValidatesRequestBodyWithJsonSchema;
+use DomainException;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Routing\Route;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Tests\BaseTestCase;
+
+class ValidatesRequestBodyWithJsonSchemaTest extends BaseTestCase
+{
+    /**
+     * Build a request that is ready for validateResolved(), the way Laravel's container would hand it to a controller.
+     * @param FormRequest $request   Instance of the request class under test
+     */
+    private function resolve(
+        FormRequest $request,
+        string $body,
+        string $contentType = 'application/json',
+        string $uri = '/widgets',
+    ): FormRequest {
+        $resolved = $request::create($uri, 'POST', [], [], [], ['CONTENT_TYPE' => $contentType], $body);
+        $resolved->setContainer($this->app);
+        return $resolved;
+    }
+
+    private function widgetRequest(): FormRequest
+    {
+        return new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+            public const SCHEMA = 'widget.json';
+        };
+    }
+
+    public function testValidBodyPasses(): void
+    {
+        $request = $this->resolve($this->widgetRequest(), '{"name":"sprocket","count":3,"parts":{"gears":[1,2]}}');
+        $request->validateResolved();
+        self::assertSame(
+            ['name' => 'sprocket', 'count' => 3, 'parts' => ['gears' => [1, 2]]],
+            $request->validated(),
+        );
+        self::assertSame('sprocket', $request->validated('name'));
+    }
+
+    public function testSchemaViolationThrowsJsonSchemaValidationException(): void
+    {
+        $request = $this->resolve($this->widgetRequest(), '{"name":"sprocket","count":"three"}');
+        try {
+            $request->validateResolved();
+            self::fail('Expected a JsonSchemaValidationException');
+        } catch (JsonSchemaValidationException $exception) {
+            self::assertSame('Request body contains invalid data!', $exception->getMessage());
+            self::assertSame(400, $exception->getStatusCode());
+        }
+    }
+
+    public function testNonJsonBodyThrows400(): void
+    {
+        $request = $this->resolve($this->widgetRequest(), 'name=sprocket', 'application/x-www-form-urlencoded');
+        try {
+            $request->validateResolved();
+            self::fail('Expected an HttpException');
+        } catch (HttpException $exception) {
+            self::assertSame(400, $exception->getStatusCode());
+            self::assertSame('Request body must be JSON', $exception->getMessage());
+        }
+    }
+
+    /**
+     * Apps commonly declare the constant protected, and only make it public when an OpenAPI annotation needs it
+     */
+    public function testProtectedSchemaConstantIsFound(): void
+    {
+        $request = new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+            protected const SCHEMA = 'widget.json';
+        };
+        $valid = $this->resolve($request, '{"name":"sprocket"}');
+        $valid->validateResolved();
+        self::assertSame(['name' => 'sprocket'], $valid->validated());
+
+        $invalid = $this->resolve($request, '{"count":3}');
+        $this->expectException(JsonSchemaValidationException::class);
+        $invalid->validateResolved();
+    }
+
+    public function testMissingSchemaConstantIsAMisconfiguration(): void
+    {
+        $request = new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+        };
+        $request = $this->resolve($request, '{"name":"sprocket"}');
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('has not configured the SCHEMA');
+        $request->validateResolved();
+    }
+
+    /**
+     * The trait does not touch authorization, by design: it only hooks passedValidation(), so Laravel's
+     * authorize() and failedAuthorization() run as usual. This is a regression test against the earlier design,
+     * which overrode validateResolved() and had to re-implement authorization itself.
+     */
+    public function testTraitLeavesAuthorizationToLaravel(): void
+    {
+        $request = new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+            public const SCHEMA = 'widget.json';
+
+            public function authorize(): bool
+            {
+                return false;
+            }
+        };
+        // This body is not JSON, yet Laravel's authorization failure is what surfaces
+        $request = $this->resolve($request, 'garbage', 'text/plain');
+        $this->expectException(AuthorizationException::class);
+        $request->validateResolved();
+    }
+
+    public function testPrepareForValidationStillRuns(): void
+    {
+        $request = new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+            public const SCHEMA = 'widget.json';
+            public bool $prepared = false;
+
+            protected function prepareForValidation(): void
+            {
+                $this->prepared = true;
+            }
+        };
+        $request = $this->resolve($request, '{"name":"sprocket"}');
+        $request->validateResolved();
+        self::assertTrue($request->prepared);
+    }
+
+    /**
+     * Route and query data are not schema-checked, so they must not be readable through validated() or safe()
+     */
+    public function testRouteAndQueryDataAreNotAccessibleThroughValidatedOrSafe(): void
+    {
+        $request = $this->resolve($this->widgetRequest(), '{"name":"sprocket"}', uri: '/widgets/42?page=2');
+        $route = new Route('POST', '/widgets/{id}', []);
+        $route->bind($request);
+        $request->setRouteResolver(fn() => $route);
+        $request->validateResolved();
+
+        // They stay reachable the normal way
+        self::assertSame('42', $request->route('id'));
+        self::assertSame('2', $request->query('page'));
+
+        self::assertSame(['name' => 'sprocket'], $request->validated());
+        self::assertNull($request->validated('id'));
+        self::assertNull($request->validated('page'));
+        self::assertSame('fallback', $request->validated('page', 'fallback'));
+        self::assertNull($request->safe()->input('id'));
+    }
+
+    public function testSafeReturnsTheBody(): void
+    {
+        $request = $this->resolve($this->widgetRequest(), '{"name":"sprocket","count":3}');
+        $request->validateResolved();
+        self::assertSame(['name' => 'sprocket', 'count' => 3], $request->safe()->all());
+        self::assertSame(['name' => 'sprocket'], $request->safe(['name']));
+    }
+
+    public function testTopLevelKeyContainingADot(): void
+    {
+        $request = $this->resolve($this->widgetRequest(), '{"name":"sprocket","a.b":"dotted"}');
+        $request->validateResolved();
+        self::assertSame(['name' => 'sprocket', 'a.b' => 'dotted'], $request->validated());
+    }
+
+    public function testListBodyIsReturned(): void
+    {
+        $request = new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+            public const SCHEMA = '{"type":"array"}';
+        };
+        $request = $this->resolve($request, '[1,2,3]');
+        $request->validateResolved();
+        self::assertSame([1, 2, 3], $request->validated());
+    }
+
+    /**
+     * validated() is an array, so a scalar body that passes the schema has no keys to return
+     */
+    public function testScalarBodyThatPassesTheSchemaHasNothingToValidate(): void
+    {
+        $request = new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+            public const SCHEMA = '{"type":"integer"}';
+        };
+        $request = $this->resolve($request, '3');
+        $request->validateResolved();
+        self::assertSame([], $request->validated());
+    }
+
+    /**
+     * The schema check must see the raw string, so an empty object stays an object ({} vs [] is not ambiguous)
+     */
+    public function testEmptyObjectBodySatisfiesTypeObject(): void
+    {
+        $request = new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+            public const SCHEMA = '{"type":"object"}';
+        };
+        $request = $this->resolve($request, '{}');
+        $request->validateResolved();
+        self::assertSame([], $request->validated());
+    }
+
+    public function testUnparseableJsonBodyThrows400(): void
+    {
+        $request = $this->resolve($this->widgetRequest(), '{"name":');
+        try {
+            $request->validateResolved();
+            self::fail('Expected a 400 HttpException');
+        } catch (HttpException $exception) {
+            self::assertSame(400, $exception->getStatusCode());
+        }
+    }
+
+    public function testEmptyObjectBodyDoesNotSatisfyTypeArray(): void
+    {
+        $request = new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+            public const SCHEMA = '{"type":"array"}';
+        };
+        $request = $this->resolve($request, '{}');
+        $this->expectException(JsonSchemaValidationException::class);
+        $request->validateResolved();
+    }
+
+    public function testLogRejectedBodyIsCalledOnSchemaFailure(): void
+    {
+        $request = new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+            public const SCHEMA = 'widget.json';
+            public ?JsonSchemaValidationException $logged = null;
+            public ?string $loggedBody = null;
+
+            protected function logRejectedBody(JsonSchemaValidationException $exception): void
+            {
+                $this->logged = $exception;
+                $this->loggedBody = $this->getContent();
+            }
+        };
+        $request = $this->resolve($request, '{"count":3}');
+        try {
+            $request->validateResolved();
+            self::fail('Expected a JsonSchemaValidationException');
+        } catch (JsonSchemaValidationException $exception) {
+            self::assertSame($exception, $request->logged);
+            self::assertSame('{"count":3}', $request->loggedBody);
+        }
+    }
+
+    public function testLogRejectedBodyIsNotCalledForNonJsonBody(): void
+    {
+        $request = new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+            public const SCHEMA = 'widget.json';
+            public bool $logged = false;
+
+            protected function logRejectedBody(JsonSchemaValidationException $exception): void
+            {
+                $this->logged = true;
+            }
+        };
+        $request = $this->resolve($request, 'name=sprocket', 'application/x-www-form-urlencoded');
+        try {
+            $request->validateResolved();
+            self::fail('Expected an HttpException');
+        } catch (HttpException) {
+            self::assertFalse($request->logged);
+        }
+    }
+
+    public function testDecoratingValidateResolvedStillRunsTheSchemaCheck(): void
+    {
+        $request = new class extends FormRequest {
+            use ValidatesRequestBodyWithJsonSchema;
+            public const SCHEMA = 'widget.json';
+            public bool $extraCheckRan = false;
+
+            public function validateResolved(): void
+            {
+                parent::validateResolved();
+                $this->extraCheckRan = true;
+            }
+        };
+
+        $valid = $this->resolve(clone $request, '{"name":"sprocket"}');
+        $valid->validateResolved();
+        self::assertTrue($valid->extraCheckRan);
+
+        $invalid = $this->resolve(clone $request, '{"count":3}');
+        try {
+            $invalid->validateResolved();
+            self::fail('Expected a JsonSchemaValidationException');
+        } catch (JsonSchemaValidationException) {
+            self::assertFalse($invalid->extraCheckRan);
+        }
+    }
+}
